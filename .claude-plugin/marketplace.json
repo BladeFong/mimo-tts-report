@@ -1,0 +1,15 @@
+{
+  "name": "mimo-tts-report",
+  "description": "MiMo TTS 语音播报插件",
+  "owner": {
+    "name": "lanef"
+  },
+  "plugins": [
+    {
+      "name": "mimo-tts-report",
+      "source": "./",
+      "description": "MiMo TTS 语音播报插件",
+      "version": "1.0.0"
+    }
+  ]
+}
