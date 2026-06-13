@@ -40,13 +40,20 @@ Claude Code 语音播报插件，使用 MiMo TTS API 完成任务后自动语音
 TTS_API_KEY=your-api-key-here
 TTS_VOICE=茉莉
 TTS_STYLE=用平静温和的语气简要汇报
+
+# 持久化模式（可选）
+MODE_PERSIST=false
+CHAT_MODE=false
 ```
+
+- `MODE_PERSIST=true`：无需每次手动 `/enable`，会话启动自动启用；`CHAT_MODE` 持久保存
+- `CHAT_MODE=true`：交流模式（每次回复都播报）
 
 ## 工作原理
 
 插件通过 Claude Code hooks 在以下时机触发：
 
-- **SessionStart**：清除会话状态
+- **SessionStart**：清除会话状态（`MODE_PERSIST=true` 时，自动恢复启用且不影响 `CHAT_MODE` 持久化）
 - **UserPromptSubmit**：记录任务开始时间
 - **TaskCreated**：记录任务标题
 - **Stop**：任务完成后播报结果（耗时 > 3 分钟）
