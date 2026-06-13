@@ -1,0 +1,8 @@
+{
+  "name": "mimo-tts-report",
+  "version": "1.0.0",
+  "description": "MiMo TTS 语音播报插件，完成任务后自动语音汇报",
+  "author": {
+    "name": "lanef"
+  }
+}
