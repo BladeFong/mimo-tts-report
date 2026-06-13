@@ -49,7 +49,8 @@ with open('$STATE_FILE', 'w') as f:
         NOW=$(date +%s)
         ELAPSED=$((NOW - START_TIME))
         # 交流模式跳过时间检查
-        if [ ! -f "/dev/shm/mimo-tts-chat-mode" ] && [ "$ELAPSED" -lt 180 ]; then
+        CHAT_STATUS=$("$SCRIPT_DIR/chat_manager.sh" status)
+        if [ "$CHAT_STATUS" != "开启" ] && [ "$ELAPSED" -lt 180 ]; then
             "$SCRIPT_DIR/report.sh" cleanup
             exit 0
         fi
