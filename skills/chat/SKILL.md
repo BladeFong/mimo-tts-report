@@ -9,8 +9,6 @@ user-invocable: true
 步骤：
 1. 先执行 enable 流程（参考 enable.md）
 2. 如果 `NEED_INIT=true`，提示用户先执行 `/mimo-tts-report:init`
-3. 如果 `READY=true`，检查当前模式：`[ -f /dev/shm/mimo-tts-chat-mode ] && echo "开启" || echo "关闭"`
-4. 切换模式：
-   - 当前开启 → 关闭：`rm -f /dev/shm/mimo-tts-chat-mode`
-   - 当前关闭 → 开启：`touch /dev/shm/mimo-tts-chat-mode`
+3. 如果 `READY=true`，检查当前状态：`bash ${CLAUDE_PLUGIN_ROOT}/scripts/chat_manager.sh status`
+4. 切换模式：`bash ${CLAUDE_PLUGIN_ROOT}/scripts/chat_manager.sh toggle`
 5. 告知用户当前状态
