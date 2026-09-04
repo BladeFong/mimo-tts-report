@@ -41,15 +41,18 @@ TRANSLATIONS = {
     'Claude needs your permission': 'Claude 需要你的授权',
 }
 
-# 构建播报内容
+# 构建播报内容与差异化延迟
+delay = '30'
 if tool == 'AskUserQuestion' and question:
     opts = '、'.join(options) if options else ''
     text = f'{question} 选项：{opts}' if opts else question
+    delay = '30'
 elif message:
     text = TRANSLATIONS.get(message, message) if is_chinese else message
+    delay = '10'
 else:
     sys.exit(0)
 
-# 调用预播报（延迟30秒）
-subprocess.run(['bash', '$PREANNOUNCE_SCRIPT', text], capture_output=True)
+# 调用预播报（选择题延迟 30 秒，授权延迟 10 秒）
+subprocess.run(['bash', '$PREANNOUNCE_SCRIPT', text, delay], capture_output=True)
 " 2>/dev/null &

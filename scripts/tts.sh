@@ -16,6 +16,20 @@ if [ "${1:-}" = "voices" ]; then
     exit 0
 fi
 
+# 停止播放子命令
+if [ "${1:-}" = "stop" ]; then
+    PID_FILE="/dev/shm/mimo_tts_player.pid"
+    if [ -f "$PID_FILE" ]; then
+        OLD_PID=$(cat "$PID_FILE" 2>/dev/null)
+        if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+            pkill -P "$OLD_PID" 2>/dev/null || true
+            kill "$OLD_PID" 2>/dev/null || true
+        fi
+        rm -f "$PID_FILE" 2>/dev/null
+    fi
+    exit 0
+fi
+
 TEXT="${1:-}"
 VOICE="${2:-${TTS_VOICE:-茉莉}}"
 STYLE="${3:-${TTS_STYLE:-用平静温和的语气简要汇报}}"
@@ -54,31 +68,45 @@ except:
 
 [ -z "$AUDIO_B64" ] && exit 0
 
-DURATION=$(python3 -c "
+PID_FILE="/dev/shm/mimo_tts_player.pid"
+
+# 中断当前正在播放的音频（如有）
+if [ -f "$PID_FILE" ]; then
+    OLD_PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+        pkill -P "$OLD_PID" 2>/dev/null || true
+        kill "$OLD_PID" 2>/dev/null || true
+    fi
+    rm -f "$PID_FILE" 2>/dev/null
+fi
+
+MODIFIED_B64=$(python3 -c "
 import base64, struct, sys
 data = bytearray(base64.b64decode(sys.stdin.read()))
 sr = struct.unpack_from('<I', data, 24)[0]
-br = struct.unpack_from('<I', data, 28)[0]
 silence_samples = sr * 200 // 1000
 data[44:44] = b'\x00' * (silence_samples * 2)
 data_size = len(data) - 44
 struct.pack_into('<I', data, 4, len(data) - 8)
 struct.pack_into('<I', data, 40, data_size)
-with open('/dev/shm/tts_play.wav', 'wb') as f:
-    f.write(data)
-print(f'{(data_size / br):.1f}')
+sys.stdout.write(base64.b64encode(data).decode('ascii'))
 " <<< "$AUDIO_B64")
 
-SLEEP_SEC=$(python3 -c "import math; print(math.ceil(float('$DURATION') + 1))")
-powershell.exe -Command "
-Add-Type -AssemblyName PresentationCore
-\$p = New-Object System.Windows.Media.MediaPlayer
-\$p.Open([URI]::new('//wsl.localhost/Ubuntu-24.04/dev/shm/tts_play.wav'))
-Start-Sleep -Milliseconds 800
-\$p.Volume = 1.0
-\$p.Play()
-Start-Sleep -Seconds ${SLEEP_SEC}
-\$p.Close()
-" 2>/dev/null
+[ -z "$MODIFIED_B64" ] && exit 0
 
-rm -f /dev/shm/tts_play.wav
+# 后台纯内存播放，不写磁盘临时文件，PlaySync 播完子进程自动退出
+(
+    echo "$MODIFIED_B64" | powershell.exe -NoProfile -NonInteractive -Command "
+    \$b64 = [Console]::In.ReadToEnd()
+    if (-not [string]::IsNullOrWhiteSpace(\$b64)) {
+        \$bytes = [System.Convert]::FromBase64String(\$b64.Trim())
+        \$ms = New-Object System.IO.MemoryStream(,\$bytes)
+        \$sp = New-Object System.Media.SoundPlayer(\$ms)
+        \$sp.PlaySync()
+        \$sp.Dispose()
+        \$ms.Dispose()
+    }
+    " 2>/dev/null
+    rm -f "$PID_FILE" 2>/dev/null
+) </dev/null >/dev/null 2>&1 &
+echo $! > "$PID_FILE"
