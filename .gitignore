@@ -1,3 +1,5 @@
 state.yaml
 docs/
 __pycache__/
+.gemini/
+plugin.json
