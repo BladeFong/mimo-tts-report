@@ -132,6 +132,7 @@ except Exception:
 
 else
     # --- MiMo TTS 引擎 (小米 API，交由 Windows 后台完全独立播放) ---
+    MIMO_URL="${TTS_BASE_URL:-https://token-plan-cn.xiaomimimo.com/v1/chat/completions}"
     python3 -c "
 import sys, os, time, json, base64, struct, subprocess, urllib.request
 
@@ -139,6 +140,7 @@ api_key = sys.argv[1]
 text = sys.argv[2]
 voice = sys.argv[3]
 style = sys.argv[4]
+mimo_url = sys.argv[5] if len(sys.argv) > 5 and sys.argv[5] else 'https://token-plan-cn.xiaomimimo.com/v1/chat/completions'
 
 if not api_key:
     sys.exit(0)
@@ -153,7 +155,7 @@ payload = json.dumps({
 }, ensure_ascii=False).encode('utf-8')
 
 req = urllib.request.Request(
-    'https://token-plan-cn.xiaomimimo.com/v1/chat/completions',
+    mimo_url,
     data=payload,
     headers={'api-key': api_key, 'Content-Type': 'application/json'}
 )
@@ -200,6 +202,6 @@ Remove-Item '{win_path}' -Force -ErrorAction SilentlyContinue
             pass
 except Exception:
     pass
-" "${TTS_API_KEY:-}" "$TEXT" "$VOICE" "$STYLE" </dev/null >/dev/null 2>&1 &
+" "${TTS_API_KEY:-}" "$TEXT" "$VOICE" "$STYLE" "$MIMO_URL" </dev/null >/dev/null 2>&1 &
     echo $! > "$WSL_PID_FILE"
 fi

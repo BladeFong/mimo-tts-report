@@ -89,23 +89,26 @@ case "$ACTION" in
 
         PERSIST="false"
         CHAT="false"
+        BASE_URL="https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
         SUMMARY_EN="true"
         SUMMARY_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         SUMMARY_KEY=""
-        SUMMARY_MOD="gemini-2.0-flash-lite"
+        SUMMARY_MOD="gemini-flash-lite-latest"
         if [ -f "$CONFIG_FILE" ]; then
             source "$CONFIG_FILE"
             PERSIST="${MODE_PERSIST:-false}"
             CHAT="${CHAT_MODE:-false}"
+            BASE_URL="${TTS_BASE_URL:-https://token-plan-cn.xiaomimimo.com/v1/chat/completions}"
             SUMMARY_EN="${SUMMARY_ENABLED:-true}"
             SUMMARY_URL="${SUMMARY_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/chat/completions}"
             SUMMARY_KEY="${SUMMARY_API_KEY:-}"
-            SUMMARY_MOD="${SUMMARY_MODEL:-gemini-2.0-flash-lite}"
+            SUMMARY_MOD="${SUMMARY_MODEL:-gemini-flash-lite-latest}"
         fi
 
         cat > "$CONFIG_FILE" << EOF
 # TTS 配置
 TTS_ENGINE=$ENGINE
+TTS_BASE_URL=$BASE_URL
 TTS_API_KEY=$API_KEY
 TTS_VOICE=$VOICE
 TTS_STYLE=$STYLE

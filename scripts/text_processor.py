@@ -114,7 +114,7 @@ def summarize_with_llm(text):
     enabled = cfg.get('SUMMARY_ENABLED', 'true').lower() in ('true', '1')
     api_key = os.environ.get('SUMMARY_API_KEY') or cfg.get('SUMMARY_API_KEY', '').strip()
     base_url = cfg.get('SUMMARY_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')
-    model = cfg.get('SUMMARY_MODEL', 'gemini-2.0-flash-lite')
+    model = cfg.get('SUMMARY_MODEL', 'gemini-flash-lite-latest')
 
     # 若未启用总结或未配置 Key，直接走基础清洗
     if not enabled or not api_key:
@@ -133,34 +133,38 @@ def summarize_with_llm(text):
         "3. 直接输出纯文本，严禁包含任何 Markdown 标记（如 #、*、链接、代码块等）或排版符号。"
     )
 
-    payload = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text[:4000]}
-        ],
-        "max_tokens": 200,
-        "temperature": 0.3
-    }).encode('utf-8')
+    models_to_try = [model]
+    if model != 'gemini-flash-lite-latest' and 'gemini' in model:
+        models_to_try.append('gemini-flash-lite-latest')
 
-    req = urllib.request.Request(
-        base_url,
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-    )
+    for m in models_to_try:
+        payload = json.dumps({
+            "model": m,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text[:4000]}
+            ],
+            "max_tokens": 200,
+            "temperature": 0.3
+        }).encode('utf-8')
 
-    try:
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
-            res_data = json.loads(resp.read().decode('utf-8'))
-            summary = res_data['choices'][0]['message']['content'].strip()
-            if summary:
-                return clean_for_tts(summary, max_len=300)
-    except Exception:
-        # 超时或 API 异常时，平滑降级为本地清洗
-        pass
+        req = urllib.request.Request(
+            base_url,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                res_data = json.loads(resp.read().decode('utf-8'))
+                summary = res_data['choices'][0]['message']['content'].strip()
+                if summary:
+                    return clean_for_tts(summary, max_len=300)
+        except Exception:
+            continue
 
     return clean_for_tts(text)
 
