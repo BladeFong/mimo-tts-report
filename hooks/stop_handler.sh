@@ -6,9 +6,6 @@ PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 # 未启用则跳过
 [ ! -f "/dev/shm/mimo-tts-report-enabled" ] && exit 0
 
-# 取消可能悬挂的预播报
-bash "$PLUGIN_ROOT/scripts/preannounce.sh" cancel 2>/dev/null
-
 export PLUGIN_ROOT
 INPUT=$(cat - 2>/dev/null || true)
 [ -z "$INPUT" ] && exit 0

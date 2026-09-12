@@ -1,15 +1,19 @@
 #!/bin/bash
-# Notification hook: permission_prompt 时调用预播报
+# Notification hook: permission_prompt 时调用预播报（单会话内存隔离）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 CONFIG_FILE="${PLUGIN_ROOT}/config.env"
-STATE_FILE="${PLUGIN_ROOT}/state.yaml"
 PREANNOUNCE_SCRIPT="${PLUGIN_ROOT}/scripts/preannounce.sh"
 
 # 未启用则跳过
 [ ! -f "/dev/shm/mimo-tts-report-enabled" ] && exit 0
 
 INPUT=$(cat - 2>/dev/null || exit 0)
+[ -z "$INPUT" ] && exit 0
+
+SESSION_ID=$(echo "$INPUT" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('session_id', ''))" 2>/dev/null || echo "")
+SESSION_DIR=$("$PLUGIN_ROOT/scripts/session_helper.sh" get_dir "$SESSION_ID")
+STATE_FILE="${SESSION_DIR}/state.yaml"
 
 echo "$INPUT" | python3 -c "
 import sys, json, yaml, subprocess
@@ -54,5 +58,5 @@ else:
     sys.exit(0)
 
 # 调用预播报（选择题延迟 30 秒，授权延迟 10 秒）
-subprocess.run(['bash', '$PREANNOUNCE_SCRIPT', text, delay], capture_output=True)
+subprocess.run(['bash', '$PREANNOUNCE_SCRIPT', text, delay, '$SESSION_ID'], capture_output=True)
 " 2>/dev/null &

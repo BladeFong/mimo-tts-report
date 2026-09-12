@@ -17,6 +17,13 @@ case "$ACTION" in
         # 设置所有脚本执行权限
         chmod +x "$SCRIPT_DIR"/*.sh
         chmod +x "$SKILL_DIR/hooks"/*.sh 2>/dev/null || true
+        [ -d "$SKILL_DIR/.gemini/hooks" ] && chmod +x "$SKILL_DIR/.gemini/hooks"/*.sh 2>/dev/null || true
+
+        # 清理超过 48 小时未活动的孤立会话目录（垃圾回收）
+        if [ -d "/dev/shm/mimo-tts-sessions" ]; then
+            find /dev/shm/mimo-tts-sessions/ -mindepth 1 -maxdepth 1 -type d -mmin +2880 -exec rm -rf {} + 2>/dev/null || true
+        fi
+
         [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
         ENGINE="${TTS_ENGINE:-edge}"
         if [ "$ENGINE" = "edge" ] || [ -n "${TTS_API_KEY:-}" ]; then
