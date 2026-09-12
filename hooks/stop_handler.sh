@@ -10,4 +10,7 @@ PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 bash "$PLUGIN_ROOT/scripts/preannounce.sh" cancel 2>/dev/null
 
 export PLUGIN_ROOT
-cat - | python3 "$PLUGIN_ROOT/scripts/stop_processor.py" 2>/dev/null &
+INPUT=$(cat - 2>/dev/null || true)
+[ -z "$INPUT" ] && exit 0
+
+echo "$INPUT" | python3 "$PLUGIN_ROOT/scripts/stop_processor.py" >/dev/null 2>&1 &
